@@ -1,8 +1,18 @@
 pub fn game_loop(game_state: &mut GameState) {
-    game_state.print_board();
+    loop {
+        game_state.print_board();
 
-    let (x, y) = get_coords(game_state.get_current_player(), game_state.board.len());
+        let (x, y) = get_coords(game_state.get_current_player(), game_state.board.len(), None);
 
+        match game_state.place(x, y) {
+            Ok(_) => continue,
+            Err(e) => {
+                println!("{}", e);
+                print!("Press enter to continue...");
+                let _: String = read!("{}\n");
+            },
+        }
+    }
 }
 
 fn print_prompt(current_player: &Player) -> String {
@@ -10,7 +20,8 @@ fn print_prompt(current_player: &Player) -> String {
     read!("{}\n")
 }
 
-fn get_coords(current_player: &Player, max: usize) -> (usize, usize) {
+fn get_coords(current_player: &Player, max_x: usize, optional_max_y: Option<usize>) -> (usize, usize) {
+    let max_y = optional_max_y.unwrap_or(max_x);
     print_help_prompt();
     loop {
         let user: String = print_prompt(current_player);
@@ -32,10 +43,14 @@ fn get_coords(current_player: &Player, max: usize) -> (usize, usize) {
             2 => {
                 let x: usize = match possible_coords[0].parse() {
                     Ok(x) => {
-                        if x > max {
+                        if x > max_x {
                             println!("Too large x position");
                             continue;
                         }
+                        if x == 0 {
+                            println!("X cannot be zero");
+                            continue;
+                        };
                         x
                     },
                     Err(_) => {
@@ -45,10 +60,14 @@ fn get_coords(current_player: &Player, max: usize) -> (usize, usize) {
                 };
                 let y: usize = match possible_coords[1].parse() {
                     Ok(y) => {
-                        if y > max {
+                        if y > max_y {
                             println!("Too large y position");
                             continue;
                         }
+                        if y == 0 {
+                            println!("Y cannot be zero");
+                            continue;
+                        };
                         y
                     },
                     Err(_) => {
@@ -56,7 +75,7 @@ fn get_coords(current_player: &Player, max: usize) -> (usize, usize) {
                         continue;
                     },
                 };
-                return (x, y);
+                return (x-1, y-1);
             },
             _ => { print_help() }
         }
@@ -68,8 +87,8 @@ fn print_help_prompt() {
 }
 
 fn print_help() {
-    println!("Origin is in the bottom left.");
-    println!("Your position should be x first then y position starting from the bottom left with a separating them");
+    println!("Origin is in the top left.");
+    println!("Your position should be x first then y position starting from the top left with a space separating them");
     println!("Examples: 'x y' '3 1' '1 2' '1 3'");
 }
 
@@ -116,9 +135,27 @@ pub struct GameState {
 }
 
 impl GameState {
-    // Origin: Bottom left
-    fn place(&mut self, x: u32, y: u32) -> Option<Player> {
-        todo!();
+    // Origin: top left
+    fn place(&mut self, x: usize, y: usize) -> Result<Player, &'static str> {
+        if y > self.board.len() || x > self.board[0].len() {
+            return Err("Out of Bounds");
+        }
+
+        let player = *self.get_current_player();
+
+        match self.board[y][x] {
+            None => {
+
+                self.board[y][x] = Some(player);
+                self.turn_number+=1;
+
+                // TODO: Check winner
+                Ok(player)
+            },
+            Some(_) => {
+                Err("There is already a piece there!")
+            }
+        }
     }
 
     fn get_current_player(&self) -> &Player {
@@ -136,13 +173,13 @@ impl GameState {
         let left_offset = 20;
 
         for row in self.board.iter().take(1) {
+            print!("{}", " ".repeat(left_offset));
             for position in row.iter().take(1) {
                 match position {
                     Some(player) => print!("{}", player),
                     None => print!(" ")
                 };
             }
-            print!("{}", " ".repeat(left_offset));
             for position in row.iter().skip(1) {
                 print!("│");
                 match position {
@@ -154,13 +191,13 @@ impl GameState {
         for row in self.board.iter().skip(1) {
             println!("");
             println!("{}{}{}", " ".repeat(left_offset), "─┼".repeat( self.board.len()-1), "─");
+            print!("{}", " ".repeat(left_offset));
             for position in row.iter().take(1) {
                 match position {
                     Some(player) => print!("{}", player),
                     None => print!(" ")
                 };
             }
-            print!("{}", " ".repeat(left_offset));
             for position in row.iter().skip(1) {
 
                 print!("│");
