@@ -47,6 +47,7 @@ pub fn get_coords(current_player: &Player, max_x: usize, optional_max_y: Option<
     print_help_prompt();
     loop {
         let user: String = print_prompt(current_player);
+        println!("{}", user);
         let stripped_user = user.trim();
 
         let possible_coords: Vec<&str> = stripped_user.split_whitespace().collect();

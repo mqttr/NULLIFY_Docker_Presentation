@@ -5,6 +5,7 @@ mod tictactoe;
 mod client;
 mod server;
 mod message;
+mod database;
 
 #[macro_use] extern crate text_io;
 
@@ -15,13 +16,28 @@ fn main() {
         Some(("host", sub_matches)) => {
             let port_string = sub_matches.get_one::<u16>("port").expect("Error when trying to get port number").to_string();
 
-            server::start(port_string);
+            let db_port_string = sub_matches.get_one::<u16>("dbport").expect("Error when trying to get port number");
+
+            match sub_matches.get_one::<IpAddr>("db") {
+                Some(ip) => {
+                    let db = SocketAddr::new(*ip, *db_port_string);
+                    server::start(port_string, Some(db));
+                },
+                None => {
+                    server::start(port_string, None);
+                }
+            }
+
         },
         Some(("join", sub_matches)) => {
             let port_string = sub_matches.get_one::<u16>("port").expect("Error when trying to get port number");
             let ip_string = sub_matches.get_one::<IpAddr>("address").expect("Error when trying to get ip address");
             let remote = SocketAddr::new(*ip_string, *port_string);
             client::start(remote);
+        }
+        Some(("db", sub_matches)) => {
+            let port_string = sub_matches.get_one::<u16>("port").expect("Error when trying to get port number").to_string();
+            database::start(port_string);
         }
         _ => {
             let mut game_state = tictactoe::build_game_state(3, Some(3), None);
@@ -41,13 +57,28 @@ fn cmdline() -> clap::Command {
                 .arg(
                     Arg::new("port")
                         .help("Port number to listen to connections.")
+                        .short('p')
+                        .long("port")
                         .value_parser(clap::value_parser!(u16).range(1024..))
                         .default_value(default_port)
+                ).arg(
+                    Arg::new("db")
+                        .short('d')
+                        .long("dbaddr")
+                        .help("Address for remote db")
+                        .value_parser(clap::value_parser!(IpAddr))
+                ).arg(
+                    Arg::new("dbport")
+                        .short('r')
+                        .long("dbport")
+                        .help("Port for remote db")
+                        .value_parser(clap::value_parser!(u16).range(1024..))
+                        .default_value("5000")
                 )
         )
         .subcommand(
             Command::new("join")
-                .about("Joins a live swarm as a drone.")
+                .about("Join tictactoe server")
                 .arg_required_else_help(true)
                 .arg(
                     Arg::new("address")
@@ -62,5 +93,14 @@ fn cmdline() -> clap::Command {
                         .default_value(default_port)
                 )
         )
-    // btw, if there is no ; at the end of a line in rust it implicitly returns
+        .subcommand(
+            Command::new("db")
+                .about("Start tictactoe db server")
+                .arg(
+                    Arg::new("port")
+                        .help("Port of db server")
+                        .value_parser(clap::value_parser!(u16).range(1024..))
+                )
+        )
+    // btw, if there is no ; at the end of the last line in a block in rust it implicitly returns
 }
