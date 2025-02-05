@@ -1,11 +1,14 @@
 use clap::command;
 
+mod tictactoe;
+
 fn main() {
     let matches = cmdline().get_matches();
 
     match matches.subcommand() {
         _ => {
-            println!("Yay! You're playing tictactoe right now!!! In your mind!!!!!")
+            let mut game_state = tictactoe::build_game_state(3, None, None);
+            tictactoe::game_loop(&mut game_state);
         }
     }
 }
