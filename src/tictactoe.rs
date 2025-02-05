@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 pub fn game_loop(game_state: &mut GameState) -> Option<Player> {
     loop {
         game_state.print_board();
@@ -40,7 +42,7 @@ fn print_prompt(current_player: &Player) -> String {
     read!("{}\n")
 }
 
-fn get_coords(current_player: &Player, max_x: usize, optional_max_y: Option<usize>) -> (usize, usize) {
+pub fn get_coords(current_player: &Player, max_x: usize, optional_max_y: Option<usize>) -> (usize, usize) {
     let max_y = optional_max_y.unwrap_or(max_x);
     print_help_prompt();
     loop {
@@ -132,7 +134,7 @@ pub fn build_game_state(
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Player {
     X,
     O,
@@ -147,17 +149,18 @@ impl std::fmt::Display for Player {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct GameState {
-    turn_number: usize,
-    count_to_win: usize,
-    starting_player: Player,
-    other_player: Player,
-    board: Vec<Vec<Option<Player>>>,
+    pub turn_number: usize,
+    pub count_to_win: usize,
+    pub starting_player: Player,
+    pub other_player: Player,
+    pub board: Vec<Vec<Option<Player>>>,
 }
 
 impl GameState {
     // Origin: top left
-    fn place(&mut self, x: usize, y: usize) -> Result<Player, &'static str> {
+    pub fn place(&mut self, x: usize, y: usize) -> Result<Player, &'static str> {
         if y > self.board.len() || x > self.board[0].len() {
             return Err("Out of Bounds");
         }
@@ -178,7 +181,7 @@ impl GameState {
         }
     }
 
-    fn check_winner(&self) -> Option<Option<Player>> {
+    pub fn check_winner(&self) -> Option<Option<Player>> {
         // Trust me the return makes sense
         let mut current_player: Option<Player>;
         let mut running_count: usize;
@@ -277,55 +280,60 @@ impl GameState {
         return Some(None);
     }
 
-    fn get_current_player(&self) -> &Player {
+    pub fn get_current_player(&self) -> &Player {
         match self.turn_number % 2 {
             0 => &self.starting_player,
             1 => &self.other_player,
             _ => unreachable!("There can only be 2 players in tictactoe... unless?")
         }
     }
-    fn print_board(&self) {
-        println!("{}", "-".repeat(25));
-        println!("Turn: {}", self.turn_number);
-        println!("Current Player: {}", self.get_current_player());
-        println!("Board:");
+    pub fn print_board(&self) {
+        print!("{}", self.board_string());
+    }
+    pub fn board_string(&self) -> String {
+        let mut s = String::with_capacity(100);
+        s.push_str(&format!("{}\n", "-".repeat(25)));
+        s.push_str(&format!("Turn: {}\n", self.turn_number));
+        s.push_str(&format!("Current Player: {}\n", self.get_current_player()));
+        s.push_str(&format!("Board:\n"));
         let left_offset = 20;
 
         for row in self.board.iter().take(1) {
-            print!("{}", " ".repeat(left_offset));
+            s.push_str(&format!("{}", " ".repeat(left_offset)));
             for position in row.iter().take(1) {
                 match position {
-                    Some(player) => print!("{}", player),
-                    None => print!(" ")
+                    Some(player) => s.push_str(&format!("{}", player)),
+                    None => s.push_str(&format!(" "))
                 };
             }
             for position in row.iter().skip(1) {
-                print!("│");
+                s.push_str("│");
                 match position {
-                    Some(player) => print!("{}", player),
-                    None => print!(" ")
+                    Some(player) => s.push_str(&format!("{}", player)),
+                    None => s.push_str(&format!(" "))
                 };
             }
         }
         for row in self.board.iter().skip(1) {
-            println!("");
-            println!("{}{}{}", " ".repeat(left_offset), "─┼".repeat( self.board.len()-1), "─");
-            print!("{}", " ".repeat(left_offset));
+            s.push_str(&format!("\n"));
+            s.push_str(&format!("{}{}{}\n", " ".repeat(left_offset), "─┼".repeat( self.board.len()-1), "─"));
+            s.push_str(&format!("{}", " ".repeat(left_offset)));
             for position in row.iter().take(1) {
                 match position {
-                    Some(player) => print!("{}", player),
-                    None => print!(" ")
+                    Some(player) => s.push_str(&format!("{}", player)),
+                    None => s.push_str(&format!(" "))
                 };
             }
             for position in row.iter().skip(1) {
 
-                print!("│");
+                s.push_str(&format!("│"));
                 match position {
-                    Some(player) => print!("{}", player),
-                    None => print!(" ")
+                    Some(player) => s.push_str(&format!("{}", player)),
+                    None => s.push_str(&format!(" "))
                 };
             }
         }
-        println!("");
+        s.push_str(&format!("\n"));
+        return s;
     }
 }
