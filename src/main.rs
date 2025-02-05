@@ -9,7 +9,7 @@ fn main() {
 
     match matches.subcommand() {
         _ => {
-            let mut game_state = tictactoe::build_game_state(3, None, None);
+            let mut game_state = tictactoe::build_game_state(3, Some(3), None);
             tictactoe::game_loop(&mut game_state);
         }
     }

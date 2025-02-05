@@ -1,11 +1,31 @@
-pub fn game_loop(game_state: &mut GameState) {
+pub fn game_loop(game_state: &mut GameState) -> Option<Player> {
     loop {
         game_state.print_board();
 
         let (x, y) = get_coords(game_state.get_current_player(), game_state.board.len(), None);
 
         match game_state.place(x, y) {
-            Ok(_) => continue,
+            Ok(_) => {
+                match game_state.check_winner() {
+                    None => continue,
+                    Some(option_winner) => {
+                        match option_winner {
+                            None => {
+                                println!();
+                                game_state.print_board();
+                                println!("Noone one! This game is a Cat!");
+                                return None;
+                            },
+                            Some(winner) => {
+                                println!();
+                                game_state.print_board();
+                                println!("Game over! Player {} won!", winner);
+                                return Some(winner);
+                            }
+                        }
+                    }
+                }
+            },
             Err(e) => {
                 println!("{}", e);
                 print!("Press enter to continue...");
@@ -44,38 +64,38 @@ fn get_coords(current_player: &Player, max_x: usize, optional_max_y: Option<usiz
                 let x: usize = match possible_coords[0].parse() {
                     Ok(x) => {
                         if x > max_x {
-                            println!("Too large x position");
+                            println!("Too large first position");
                             continue;
                         }
                         if x == 0 {
-                            println!("X cannot be zero");
+                            println!("First position cannot be zero");
                             continue;
                         };
                         x
                     },
                     Err(_) => {
-                        println!("Invalid x position");
+                        println!("Invalid first position");
                         continue;
                     },
                 };
                 let y: usize = match possible_coords[1].parse() {
                     Ok(y) => {
                         if y > max_y {
-                            println!("Too large y position");
+                            println!("Too large second position");
                             continue;
                         }
                         if y == 0 {
-                            println!("Y cannot be zero");
+                            println!("Second position cannot be zero");
                             continue;
                         };
                         y
                     },
                     Err(_) => {
-                        println!("Invalid y position");
+                        println!("Invalid second position");
                         continue;
                     },
                 };
-                return (x-1, y-1);
+                return (x-1, (max_y)-y);
             },
             _ => { print_help() }
         }
@@ -88,8 +108,9 @@ fn print_help_prompt() {
 
 fn print_help() {
     println!("Origin is in the top left.");
-    println!("Your position should be x first then y position starting from the top left with a space separating them");
-    println!("Examples: 'x y' '3 1' '1 2' '1 3'");
+    println!("Over from the left; Up from the bottom");
+    println!("Example: '1 1' (Bottom Left)");
+    println!("Example: '1 3' (top Left)");
 }
 
 pub fn build_game_state(
@@ -111,7 +132,7 @@ pub fn build_game_state(
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Player {
     X,
     O,
@@ -149,13 +170,111 @@ impl GameState {
                 self.board[y][x] = Some(player);
                 self.turn_number+=1;
 
-                // TODO: Check winner
                 Ok(player)
             },
             Some(_) => {
                 Err("There is already a piece there!")
             }
         }
+    }
+
+    fn check_winner(&self) -> Option<Option<Player>> {
+        // Trust me the return makes sense
+        let mut current_player: Option<Player>;
+        let mut running_count: usize;
+
+        // Check for horizontal win
+        for i in 0..self.board.len() {
+            running_count = 0;
+            current_player = None;
+            for j in 0..self.board[0].len() {
+                match self.board[i][j] {
+                    Some(player) => {
+                        match current_player {
+                            None => {
+                                running_count+=1;
+                                current_player = Some(player);
+                            },
+                            Some(curr) => {
+                                if player == curr {
+                                    running_count += 1;
+                                } else {
+                                    running_count = 0;
+                                    current_player = Some(player);
+                                }
+                            }
+                        }
+
+                    },
+                    None => {
+                        running_count = 0;
+                        current_player = None;
+                    }
+                }
+                if running_count == self.count_to_win {
+                    return Some(current_player);
+                }
+            }
+        }
+        // Check for vertical win
+        for j in 0..self.board[0].len() {
+            running_count = 0;
+            current_player = None;
+            for i in 0..self.board.len() {
+                match self.board[i][j] {
+                    Some(player) => {
+                        match current_player {
+                            None => {
+                                running_count+=1;
+                                current_player = Some(player);
+                            },
+                            Some(curr) => {
+                                if player == curr {
+                                    running_count += 1;
+                                } else {
+                                    running_count = 0;
+                                    current_player = Some(player);
+                                }
+                            }
+                        }
+
+                    },
+                    None => {
+                        running_count = 0;
+                        current_player = None;
+                    }
+                }
+                if running_count == self.count_to_win {
+                    return Some(current_player);
+                }
+            }
+        }
+
+        // TODO: Make this more generic cuz I won't
+        if
+            self.board[0][0].is_some() && self.board[1][1].is_some() && self.board[2][2].is_some() &&
+            (self.board[0][0].unwrap() == self.board[1][1].unwrap() && self.board[1][1].unwrap() == self.board[2][2].unwrap() ) {
+            return Some(self.board[0][0]);
+        }
+        if
+            self.board[0][2].is_some() && self.board[1][1].is_some() && self.board[2][0].is_some() &&
+            (self.board[0][2].unwrap() == self.board[1][1].unwrap() && self.board[1][1].unwrap() == self.board[2][0].unwrap() ) {
+            return Some(self.board[0][2]);
+        }
+
+
+        // Check for empty spaces
+        for row in self.board.iter() {
+            for position in row {
+                if *position == None {
+                    // There's still more to be played
+                    return None;
+                }
+            }
+        }
+
+        // Game is a Cat
+        return Some(None);
     }
 
     fn get_current_player(&self) -> &Player {
