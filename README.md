@@ -1,13 +1,12 @@
 # NULLIFY Docker Introduction Presentation
 by Matthew Roland
 
-You will need Rust installed to be able to run this program. Not that it does much now, but it will some day. You just need to believe
+Used to showcase docker... I don't wanna clear everything but don't spoil yourself or do idrc
 
-Yeah... So don't use this to learn Rust or how good programs work. It just works (maybe), and that's good enough for me for rn
-
-This uses a directory at ./storage
-
-# Using this Commit with Docker
+## Setting up
 ```bash
-docker compose up -d
+git clone <url>
+cd NULLIFY_Docker_Presentation
+git reset --hard start-docker
+mkdir data
 ```
