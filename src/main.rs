@@ -18,6 +18,7 @@ fn main() {
 
             let db_port_string = sub_matches.get_one::<u16>("dbport").expect("Error when trying to get port number");
 
+            // TODO: Accept Hostnames
             match sub_matches.get_one::<IpAddr>("db") {
                 Some(ip) => {
                     let db = SocketAddr::new(*ip, *db_port_string);
@@ -66,7 +67,6 @@ fn cmdline() -> clap::Command {
                         .short('d')
                         .long("dbaddr")
                         .help("Address for remote db")
-                        .value_parser(clap::value_parser!(IpAddr))
                 ).arg(
                     Arg::new("dbport")
                         .short('r')
@@ -100,6 +100,7 @@ fn cmdline() -> clap::Command {
                     Arg::new("port")
                         .help("Port of db server")
                         .value_parser(clap::value_parser!(u16).range(1024..))
+                        .default_value("5000")
                 )
         )
     // btw, if there is no ; at the end of the last line in a block in rust it implicitly returns

@@ -1,0 +1,26 @@
+services:
+  ttt-server:
+    build:
+      dockerfile: ./Dockerfile
+    container_name: ttt-server
+    command:
+      - tic_tac_toe
+      - host
+      - --port
+      - "6113"
+      - --dbaddr
+      - ttt-db
+      - --dbport
+      - "6000"
+    ports:
+      - 7000:6113
+      - 6113:8000
+  ttt-db:
+    build:
+      dockerfile: ./Dockerfile
+    container_name: ttt-db
+    command: [tic_tac_toe, db]
+    ports:
+      - 5000
+    volumes:
+      - ./storage:/data
