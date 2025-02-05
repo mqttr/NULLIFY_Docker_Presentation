@@ -2,6 +2,8 @@ use clap::command;
 
 mod tictactoe;
 
+#[macro_use] extern crate text_io;
+
 fn main() {
     let matches = cmdline().get_matches();
 

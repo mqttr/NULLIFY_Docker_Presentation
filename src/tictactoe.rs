@@ -1,6 +1,76 @@
 pub fn game_loop(game_state: &mut GameState) {
     game_state.print_board();
 
+    let (x, y) = get_coords(game_state.get_current_player(), game_state.board.len());
+
+}
+
+fn print_prompt(current_player: &Player) -> String {
+    print!("Where To place {}: ", current_player);
+    read!("{}\n")
+}
+
+fn get_coords(current_player: &Player, max: usize) -> (usize, usize) {
+    print_help_prompt();
+    loop {
+        let user: String = print_prompt(current_player);
+        let stripped_user = user.trim();
+
+        let possible_coords: Vec<&str> = stripped_user.split_whitespace().collect();
+
+        match possible_coords.len() {
+            0 => continue,
+            1 => {
+                if possible_coords[0] == "?" {
+                    print_help();
+                } else {
+                    println!("Missing other coordinate!");
+                    print_help_prompt();
+                    continue;
+                }
+            },
+            2 => {
+                let x: usize = match possible_coords[0].parse() {
+                    Ok(x) => {
+                        if x > max {
+                            println!("Too large x position");
+                            continue;
+                        }
+                        x
+                    },
+                    Err(_) => {
+                        println!("Invalid x position");
+                        continue;
+                    },
+                };
+                let y: usize = match possible_coords[1].parse() {
+                    Ok(y) => {
+                        if y > max {
+                            println!("Too large y position");
+                            continue;
+                        }
+                        y
+                    },
+                    Err(_) => {
+                        println!("Invalid y position");
+                        continue;
+                    },
+                };
+                return (x, y);
+            },
+            _ => { print_help() }
+        }
+    }
+}
+
+fn print_help_prompt() {
+    println!("Type '?' for help.");
+}
+
+fn print_help() {
+    println!("Origin is in the bottom left.");
+    println!("Your position should be x first then y position starting from the bottom left with a separating them");
+    println!("Examples: 'x y' '3 1' '1 2' '1 3'");
 }
 
 pub fn build_game_state(
